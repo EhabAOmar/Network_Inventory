@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Searcher</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Loading Spinner */
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: none;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 80%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="content">
+        <h2>Network Inventory</h2>
+        <form action="/inventory/" method="post" enctype="multipart/form-data" onsubmit="showLoading()">
+            <br><br>
+            <label for="file">Choose a file:</label>
+            <input type="file" name="file" id="fileInput" accept=".csv" required>
+            <p id="error" style="color: red;"></p>
+            <script>
+            document.getElementById("fileInput").addEventListener("change", function() {
+                let file = this.files[0];
+                if (file && !file.name.endsWith(".csv")) {
+                    document.getElementById("error").textContent = "Only CSV files are allowed!";
+                    this.value = "";  // Clear input
+                } else {
+                    document.getElementById("error").textContent = "";
+                }
+            });
+            </script>
+            <br><br>
+            <br><br>
+            <label for="username"> Username:</label>
+            <input type="text" name="username" required>
+
+            <label for="password">Password:</label>
+            <input type="password" name="password" required>
+            <br><br>
+            <br><br>
+            <button type="submit" name="action" value="inventory">Get Hardware Inventory</button>
+            <br><br>
+            <button type="submit" name="action" value="version">Get Version & Model</button>
+        </form>
+
+
+
+        <!-- Loading Spinner -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <p style="font-size: 24px; font-weight: bold; text-align: center; border-bottom: 3px solid blue; padding-bottom: 5px;">Processing... Please wait</p>
+        </div>
+
+        <script>
+            function showLoading() {
+                document.getElementById("loading").style.display = "block";
+            }
+        </script>
+
+    </div>
+</body>
+</html>
