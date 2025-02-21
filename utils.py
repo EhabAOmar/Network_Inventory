@@ -49,12 +49,20 @@ def network_inventory(username,password,devices,action):
     group4 = devices_info[(3*device_per_thread):(4*device_per_thread)]
     group5 = devices_info[(4*device_per_thread):(5*device_per_thread)]
 
+    # Dividing the vendor list of devices for Threading
+    vendor_list1 = vendor_list[0:device_per_thread]
+    vendor_list2 = vendor_list[(device_per_thread):(2*device_per_thread)]
+    vendor_list3 = vendor_list[(2*device_per_thread):(3*device_per_thread)]
+    vendor_list4 = vendor_list[(3*device_per_thread):(4*device_per_thread)]
+    vendor_list5 = vendor_list[(4*device_per_thread):(5*device_per_thread)]
+
+
     # Create new Threads
-    thread1 = myThread(1, "Thread-1",vendor_list,group1,action)
-    thread2 = myThread(2, "Thread-2",vendor_list,group2,action)
-    thread3 = myThread(3, "Thread-3",vendor_list,group3,action)
-    thread4 = myThread(4, "Thread-4",vendor_list,group4,action)
-    thread5 = myThread(5, "Thread-5",vendor_list,group5,action)
+    thread1 = myThread(1, "Thread-1",vendor_list1,group1,action)
+    thread2 = myThread(2, "Thread-2",vendor_list2,group2,action)
+    thread3 = myThread(3, "Thread-3",vendor_list3,group3,action)
+    thread4 = myThread(4, "Thread-4",vendor_list4,group4,action)
+    thread5 = myThread(5, "Thread-5",vendor_list5,group5,action)
 
     # Start new Threads
     thread1.start()
@@ -75,7 +83,7 @@ def network_inventory(username,password,devices,action):
     data = {}
     while not data_queue.empty():
         items = data_queue.get()
-        print(items)
+
         if action == "inventory":
             if items[4] not in data.keys(): # To add only first Serial-Number to avoid duplication
                 data[items[4]] = items[::]   # Key is Serial-Number, Value are all other data
@@ -184,7 +192,7 @@ def thread_run(threadName,vendor_list,group,action):
 
                     # Extract Product_ID, Serial-Number, Product-Description and End-of-Support (EOS)
                     for item in lines:
-                        print(f"line: {item}")
+
                         if item.find("DESCR") != -1:
                             item_Description = re.findall('DESCR:\s".*"', item)
                             if item_Description == []:
@@ -196,13 +204,13 @@ def thread_run(threadName,vendor_list,group,action):
 
                         elif item.find("PID") != -1:
                             Product_ID = re.findall('PID:\s[A-z0-9-]+\s', item)
-                            print(f"productID: {Product_ID}")
+
                             if Product_ID==[]:
                                 Product_ID = ""
                             else:
                                 Product_ID = Product_ID[0].replace("PID:","").strip()
                             Serial_Number = re.findall('SN:\s[A-z0-9]+', item)
-                            print(f"Serial_Number: {Serial_Number}")
+
                             if Serial_Number==[]:
                                 Serial_Number = ""
                             else:
@@ -215,8 +223,65 @@ def thread_run(threadName,vendor_list,group,action):
                             data_queue.put([device_IP, hostname, "Cisco", Product_ID, Serial_Number, item_Description, EOS,device_model, version])
 
 
+            except Exception as e:
+                print(f"exception: {e}")
+
+        elif vendor_list[i].lower() in ["huawei","huawei vrp","huawei_vrp"]:
+            try:
+                driver = get_network_driver("huawei_vrp")
+                device = driver(**device_info)
+                device.open()
+
+                facts = device.get_facts()  # Retrieve device facts
+
+                # Device IP address
+                device_IP = device_info['hostname']
+
+                # Device name or hostname
+                hostname = facts['hostname']
+
+                # Device software version
+                version = facts['os_version']
+
+                # Device model
+                device_model = facts['model']
+
+                # To extract version and model only
+                if action == "version":
+                    data_queue.put([device_IP, hostname, "Huawei", device_model, version])
+
+                # To extract all hardware inventory
+                else:
+                    # get device hardware inventory by command line
+                    inventory = device.cli(["display elabel"], )["display elabel"]
+
+
+                    lines = inventory.splitlines()
+                    Serial_Number = ""
+                    Product_ID = ""
+                    item_Description = ""
+
+                    # Extract Product_ID, Serial-Number, Product-Description and End-of-Support (EOS)
+                    for item in lines:
+                        if item.find("BoardType") != -1:
+                            Product_ID = item.replace("BoardType=","").strip()
+                            EOS = ""
+                            continue
+
+                        elif item.find("BarCode") != -1:
+                            Serial_Number = item.replace("BarCode=","").strip()
+                            continue
+
+                        elif item.find("Description") != -1:
+                            item_Description = item.replace("Description=", "").strip()
+
+                        if Serial_Number != "":
+                            data_queue.put([device_IP, hostname, "Huawei", Product_ID, Serial_Number, item_Description, EOS,device_model, version])
+
 
             except Exception as e:
                 print(f"exception: {e}")
+
+
 
         i = +1
