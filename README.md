@@ -4,7 +4,7 @@
 ## Discription
 A tool developed using FastAPI framework to get and extract a network of routers/switches for the hardware inventory including the EOS (End-of-Support) date for each item.
 
-The input file must be a .CSV file, with the IP address and router vendor (Juniper, Cisco, Huawei, ... etc)
+The input file must be an Excel (.xlsx) a CSV (.csv) file, with the IP address and router vendor (Juniper, Cisco, Huawei, ... etc). A template file can be downloaded as a guide in the tool.
 
 
 
