@@ -35,20 +35,21 @@
         <h2>Network Hardware Inventory</h2>
         <form action="/inventory/" method="post" enctype="multipart/form-data" onsubmit="showLoading()">
             <br><br>
-            <label for="file">Choose a file:</label>
-            <input type="file" name="file" id="fileInput" accept=".csv" required>
+            <label for="file">Choose a file (.xlsx or .csv):</label>
+            <input type="file" name="file" id="fileInput" accept=".csv,.xlsx" required>
             <p id="error" style="color: red;"></p>
             <script>
             document.getElementById("fileInput").addEventListener("change", function() {
                 let file = this.files[0];
-                if (file && !file.name.endsWith(".csv")) {
-                    document.getElementById("error").textContent = "Only CSV files are allowed!";
+                if (file && (!file.name.endsWith(".csv") && !file.name.endsWith(".xlsx"))) {
+                    document.getElementById("error").textContent = "Only .xlsx or .csv files are allowed!";
                     this.value = "";  // Clear input
                 } else {
                     document.getElementById("error").textContent = "";
                 }
             });
             </script>
+            <a href="/download-template" download="template.xlsx">Download Excel Template</a>
             <br><br>
             <br><br>
             <label for="username"> Username:</label>
