@@ -4,19 +4,6 @@ import queue
 import re
 
 
-class myThread (threading.Thread):
-   def __init__(self, threadID, name,vendor_list,group,action):
-      threading.Thread.__init__(self)
-      self.threadID = threadID
-      self.name = name
-      self.group = group
-      self.vendor_list = vendor_list
-      self.action = action
-
-   def run(self):
-      thread_run(self.name, self.vendor_list, self.group, self.action)
-
-
 def network_inventory(username,password,devices,action):
 
     # Global queue for storing the data for all threads outputs
@@ -58,11 +45,12 @@ def network_inventory(username,password,devices,action):
 
 
     # Create new Threads
-    thread1 = myThread(1, "Thread-1",vendor_list1,group1,action)
-    thread2 = myThread(2, "Thread-2",vendor_list2,group2,action)
-    thread3 = myThread(3, "Thread-3",vendor_list3,group3,action)
-    thread4 = myThread(4, "Thread-4",vendor_list4,group4,action)
-    thread5 = myThread(5, "Thread-5",vendor_list5,group5,action)
+    thread1 = threading.Thread(target=thread_run, args=(vendor_list1,group1,action))
+    thread2 = threading.Thread(target=thread_run, args=(vendor_list2,group2,action))
+    thread3 = threading.Thread(target=thread_run, args=(vendor_list3,group3,action))
+    thread4 = threading.Thread(target=thread_run, args=(vendor_list4,group4,action))
+    thread5 = threading.Thread(target=thread_run, args=(vendor_list5,group5,action))
+
 
     # Start new Threads
     thread1.start()
@@ -92,7 +80,7 @@ def network_inventory(username,password,devices,action):
     return data
 
 
-def thread_run(threadName,vendor_list,group,action):
+def thread_run(vendor_list,group,action):
 
     i = 0
     for device_info in group:

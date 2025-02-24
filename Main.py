@@ -1,13 +1,12 @@
+from fastapi import FastAPI, Form, Request, File, UploadFile, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
+from utils import network_inventory
+from datetime import datetime
 import pandas as pd
 import shutil
 import os
-from fastapi import FastAPI, Form, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, File, UploadFile,HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
-from utils import network_inventory
-from datetime import datetime
 
 
 app = FastAPI()
@@ -21,7 +20,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 # Route to serve the user form (HTML page)
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def show_form(request: Request):
     return templates.TemplateResponse("form.html", {"request": request})
 
@@ -50,6 +49,9 @@ async def process_form(
         with open(file_location) as devices_list:
             lines = devices_list.readlines()
 
+        # Delete the uploaded file after extracting devices information from it
+        os.remove(file_location)
+
         # getting a dictionary contains the devices list in (IP-address:vendor) format
         try:
             devices = {line.split(",")[0].strip():line.split(",")[1].strip() for line in lines}
@@ -60,7 +62,10 @@ async def process_form(
         pd_read = pd.read_excel(file_location, header=None).to_dict()
         devices = {pd_read[0][i]:pd_read[1][i] for i in pd_read.keys()}
 
-    # Searching the devices for the keyword(s)
+        # Delete the uploaded file after extracting devices information from it
+        os.remove(file_location)
+
+    # Getting inventory from the devices
     global data
     data = network_inventory(username,password,devices,action)
 
