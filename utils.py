@@ -2,6 +2,17 @@ import threading
 from napalm import get_network_driver
 import queue
 import re
+import json
+
+# End of Support (EOS) file, which contains static records for each product id EOS date. We can substitute this by using API for the vendor website.
+EOS_file = open("templates/EOS.txt")
+EOS_dict = json.load(EOS_file)
+
+def get_EOS(PID):
+    if PID in list(EOS_dict.keys()):
+        return EOS_dict[PID]
+    else:
+        return ""
 
 
 def network_inventory(username,password,devices,action):
@@ -118,27 +129,30 @@ def thread_run(vendor_list,group,action):
                 else:
                     # get device hardware inventory by command line
                     inventory = device.cli(["show chassis hardware | except builtin"], )["show chassis hardware | except builtin"]
+                    inventory2 = device.cli(["show chassis hardware clei-models | except builtin"], )["show chassis hardware clei-models | except builtin"]
                     lines = inventory.splitlines()
 
                     # Extract Product_ID, Serial-Number, Product-Description and End-of-Support (EOS)
                     for item in lines:
                         if "Chassis" not in item.split():
-                            Product_ID = re.findall("\d{3}-\d{6}", item)
-                            if Product_ID != []:
-                                Product_ID = Product_ID[0]
-                                item = item.split()
-                                Product_ID_index = item.index(Product_ID)
-                                Serial_Number = item[Product_ID_index+1]
-                                item_Description = " ".join(item[Product_ID_index+2:])
-                                EOS = ""
+                            #Product_ID = re.findall("\d{3}-\d{6}", item)
+                            part_number = re.findall("\d{3}-\d{6}", item)
+                            if part_number != []:
+                                #Product_ID = Product_ID[0]
+                                part_number = part_number[0]
+                                Product_ID = get_juniper_Product_ID(part_number,inventory2)
+                                item_list = item.split()
+                                Product_ID_index = item_list.index(part_number)
+                                Serial_Number = item_list[Product_ID_index+1]
+                                item_Description = " ".join(item_list[Product_ID_index+2:])
+                                EOS = get_EOS(Product_ID)
                             else:
                                 continue
                         else:       # for the item is for the Chassis, extract inventory will be handeled differently
                             Product_ID = device_model
                             item_Description = "Chassis"
                             Serial_Number = facts['serial_number']
-                            EOS = ""
-
+                            EOS = get_EOS(Product_ID)
                         data_queue.put([device_IP, hostname, "Juniper", Product_ID,Serial_Number,item_Description,EOS,device_model,version])
 
 
@@ -203,7 +217,7 @@ def thread_run(vendor_list,group,action):
                                 Serial_Number = ""
                             else:
                                 Serial_Number = Serial_Number[0].replace("SN:","").strip()
-                            EOS = ""
+                            EOS = get_EOS(Product_ID)
                         else:
                             continue
 
@@ -253,7 +267,7 @@ def thread_run(vendor_list,group,action):
                     for item in lines:
                         if item.find("BoardType") != -1:
                             Product_ID = item.replace("BoardType=","").strip()
-                            EOS = ""
+                            EOS = get_EOS(Product_ID)
                             continue
 
                         elif item.find("BarCode") != -1:
@@ -273,3 +287,13 @@ def thread_run(vendor_list,group,action):
 
 
         i = +1
+
+
+
+def get_juniper_Product_ID(part_number,inventory):
+    for item in inventory.splitlines():
+        if part_number in item:
+            item_list = item.split()
+            Product_ID = item_list[-1]
+            return Product_ID
+    return part_number

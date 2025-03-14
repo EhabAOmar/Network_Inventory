@@ -60,8 +60,9 @@ async def process_form(
 
     else:
         pd_read = pd.read_excel(file_location, header=None).to_dict()
-        devices = {pd_read[0][i]:pd_read[1][i] for i in pd_read.keys()}
 
+
+        devices = {pd_read[0][i]:pd_read[1][i] for i in range(len(pd_read.get(0)))}
         # Delete the uploaded file after extracting devices information from it
         os.remove(file_location)
 
